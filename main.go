@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/peishuli/gitlab-webhook/sample"
 	"gopkg.in/go-playground/webhooks.v5/gitlab"
 )
 
@@ -14,8 +13,6 @@ const (
 )
 
 func main() {
-
-	sample.Log("hello")
 
 	hook, _ := gitlab.New(gitlab.Options.Secret("MyGitLabSuperSecretSecrect"))
 
