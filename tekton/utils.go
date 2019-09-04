@@ -29,13 +29,13 @@ func createTaskRunDef() *api.TaskRun {
 
 	taskrun := api.TaskRun{
 		ObjectMeta: metav1.ObjectMeta {
-			Name: "identity-taskrun",
+			Name: "identity-taskrun-" + strconv.FormatInt(time.Now().Unix(), 10) ,
 			Namespace: "default",
 		},
 		Spec: api.TaskRunSpec {
 			ServiceAccount: "build-bot",
 			TaskRef: &api.TaskRef {
-				Name: "identity-build-task-" + strconv.FormatInt(time.Now().Unix(), 10) ,
+				Name: "identity-build-task",
 				
 			},
 			Inputs: api.TaskRunInputs {

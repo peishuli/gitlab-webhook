@@ -6,11 +6,13 @@ import (
 	"os"
 	"strings"
 	"flag"
+	"log"
 	"gopkg.in/go-playground/webhooks.v5/gitlab"
 	tektonutil "github.com/peishuli/gitlab-webhook/tekton"
 	"k8s.io/client-go/rest"
 	tektonv1alpha1 "github.com/tektoncd/pipeline/pkg/client/clientset/versioned/typed/pipeline/v1alpha1"
 	k8s "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 const (
@@ -22,11 +24,23 @@ func main() {
 
 	flag.Parse()
 
-	config, err := rest.InClusterConfig()
-	if err != nil {
-		fmt.Printf("Could not retrieve config: %s\n", err.Error())
+	// config, err := rest.InClusterConfig()
+	// if err != nil {
+	// 	fmt.Printf("Could not retrieve config: %s\n", err.Error())
+	// }
+
+	var config *rest.Config
+	var err error
+	kubeconfig := os.Getenv("KUBECONFIG")
+	if len(kubeconfig) != 0 {
+		config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
+	} else {
+		config, err = rest.InClusterConfig()
 	}
 
+	if err != nil {
+		fmt.Printf("Error building kubeconfig from %s: %s\n", kubeconfig, err.Error())
+	}
 	k8sClient, err := k8s.NewForConfig(config)
 	if err != nil {
 		fmt.Printf("Could not create k8sClient: %s\n", err.Error())
@@ -93,6 +107,7 @@ func main() {
 		port = ":" + port
 	}
 	fmt.Printf("Webhook listieng to port %s...\n", port)
-	http.ListenAndServe(port, nil)
+	//http.ListenAndServe(port, nil)
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
