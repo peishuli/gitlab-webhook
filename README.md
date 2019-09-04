@@ -25,7 +25,8 @@ src/k8s.io/client-go/transport/round_trippers.go:74:11: cannot convert klog.V(7)
 src/k8s.io/client-go/transport/round_trippers.go:76:11: cannot convert klog.V(6) (type klog.Verbose) to type bool
 The command '/bin/sh -c go get -u k8s.io/client-go/kubernetes' returned a non-zero code: 2
 ```
-
+Possible soluton for the docker dep issue above:
+https://stackoverflow.com/questions/52578581/trying-to-install-dependencies-using-dep-in-docker
 ## Hint: you can generate a random secretToken with:
 head -c 8 /dev/urandom | base64
 
