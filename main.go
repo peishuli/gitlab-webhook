@@ -5,17 +5,47 @@ import (
 	"net/http"
 	"os"
 	"strings"
-
+	"flag"
 	"gopkg.in/go-playground/webhooks.v5/gitlab"
-	
+	tektonutil "github.com/peishuli/gitlab-webhook/tekton"
+	"k8s.io/client-go/rest"
+	tektonv1alpha1 "github.com/tektoncd/pipeline/pkg/client/clientset/versioned/typed/pipeline/v1alpha1"
+	k8s "k8s.io/client-go/kubernetes"
 )
 
 const (
 	path = "/webhook"
 )
 
+
 func main() {
 
+	flag.Parse()
+
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		fmt.Printf("Could not retrieve config: %s\n", err.Error())
+	}
+
+	k8sClient, err := k8s.NewForConfig(config)
+	if err != nil {
+		fmt.Printf("Could not create k8sClient: %s\n", err.Error())
+	}
+	
+	tektonClient, err := tektonv1alpha1.NewForConfig(config)
+	if err != nil {
+		fmt.Printf("Could not create tektonClient: %s\n", err.Error())
+	}
+
+
+	client := tektonutil.Client{
+		K8sclient: k8sClient,
+		TektonClient: tektonClient,
+	}	
+		fmt.Printf("%s\n", client)
+
+	//client := utils.New()
+	
 	hook, _ := gitlab.New(gitlab.Options.Secret("MyGitLabSuperSecretSecrect"))
 
 	http.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {

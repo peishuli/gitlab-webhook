@@ -1,0 +1,14 @@
+run:
+  build-tags:
+  - e2e
+  skip-dirs:
+  - vendor
+  - pkg/client/clientset/versioned/fake
+linters-settings:
+  errcheck:
+    exclude: .errcheck.txt
+linters:
+  enable:
+  - errcheck
+  - gofmt
+  - goimports
