@@ -42,9 +42,7 @@ func main() {
 		K8sclient: k8sClient,
 		TektonClient: tektonClient,
 	}	
-		fmt.Printf("%s\n", client)
 
-	//client := utils.New()
 	
 	hook, _ := gitlab.New(gitlab.Options.Secret("MyGitLabSuperSecretSecrect"))
 
@@ -61,6 +59,7 @@ func main() {
 		switch payload.(type) {
 
 		case gitlab.PushEventPayload:
+			//TODO: parameterize create task runs
 			fmt.Println("Push event detected...")
 			push := payload.(gitlab.PushEventPayload)
 			fmt.Printf("%+v", push)
@@ -68,6 +67,8 @@ func main() {
 			fmt.Printf("RepositoryUrl=%s\n", push.Repository.URL)
 			parts := strings.Split(push.Ref, "/") //Ref:refs/head/dev
 			fmt.Printf("Branch=%s\n", parts[2])
+			
+			client.CreateTaskRun()
 			
 
 		case gitlab.MergeRequestEventPayload:
