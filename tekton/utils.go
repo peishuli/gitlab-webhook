@@ -35,8 +35,7 @@ func createTaskRunDef() *api.TaskRun {
 		Spec: api.TaskRunSpec {
 			ServiceAccount: "build-bot",
 			TaskRef: &api.TaskRef {
-				Name: "identity-build-task",
-				
+				Name: "identity-build-task",		
 			},
 			Inputs: api.TaskRunInputs {
 				Resources: []api.TaskResourceBinding {
