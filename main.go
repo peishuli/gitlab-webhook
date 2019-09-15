@@ -25,11 +25,6 @@ func main() {
 
 	flag.Parse()
 
-	// config, err := rest.InClusterConfig()
-	// if err != nil {
-	// 	fmt.Printf("Could not retrieve config: %s\n", err.Error())
-	// }
-
 	var config *rest.Config
 	var err error
 	kubeconfig := os.Getenv("KUBECONFIG")
@@ -82,10 +77,9 @@ func main() {
 			fmt.Printf("RepositoryUrl=%s\n", push.Repository.URL)
 			parts := strings.Split(push.Ref, "/") //Ref:refs/head/dev
 			fmt.Printf("Branch=%s\n", parts[2])
+			projectName := strings.ToLower(push.Project.Name)
+			client.CreateTaskRun(projectName)
 			
-			client.CreateTaskRun()
-			
-
 		case gitlab.MergeRequestEventPayload:
 			fmt.Println("Merge request event detected...")
 			mergeRequest := payload.(gitlab.MergeRequestEventPayload)

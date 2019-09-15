@@ -15,8 +15,8 @@ type Client struct {
 	K8sclient *k8s.Clientset
 }
 
-func (c Client) CreateTaskRun() {
-	taskrundef := createTaskRunDef()
+func (c Client) CreateTaskRun(projectName string) {
+	taskrundef := createTaskRunDef(projectName)
 	_, err := c.TektonClient.TaskRuns("default").Create(taskrundef)
 
 	if err != nil {
@@ -25,7 +25,7 @@ func (c Client) CreateTaskRun() {
 
 }
 
-func createTaskRunDef() *api.TaskRun {
+func createTaskRunDef(projectName string) *api.TaskRun {
 
 	taskrun := api.TaskRun{
 		ObjectMeta: metav1.ObjectMeta {
@@ -35,30 +35,14 @@ func createTaskRunDef() *api.TaskRun {
 		Spec: api.TaskRunSpec {
 			ServiceAccount: "build-bot",
 			TaskRef: &api.TaskRef {
-				Name: "identity-build-task",		
+				Name: projectName + "-build-task",		
 			},
 			Inputs: api.TaskRunInputs {
 				Resources: []api.TaskResourceBinding {
 					api.TaskResourceBinding{ 
-						Name: "docker-source",
+						Name: "source",
 						ResourceRef: api.PipelineResourceRef{
-							Name: "identity-git",
-						},
-					},
-				},
-				Params: []api.Param {
-					api.Param {
-						Name: "pathToDockerFile",
-						Value: api.ArrayOrString{
-							Type: api.ParamTypeString,
-							StringVal: "Dockerfile",
-						},
-					},
-					api.Param {
-						Name: "pathToContext",
-						 Value: api.ArrayOrString{
-							 Type: api.ParamTypeString,
-							 StringVal: "/workspace/docker-source/",
+							Name: projectName + "-git",
 						},
 					},
 				},
@@ -66,9 +50,9 @@ func createTaskRunDef() *api.TaskRun {
 			Outputs: api.TaskRunOutputs {
 				Resources: []api.TaskResourceBinding {
 					api.TaskResourceBinding{ 
-						Name: "builtImage",
+						Name: "image",
 						ResourceRef: api.PipelineResourceRef{
-							Name: "identity-image",
+							Name: projectName + "-image",
 						},
 					},
 				},
