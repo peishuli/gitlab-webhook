@@ -61,7 +61,6 @@ func main() {
 		payload, err := hook.Parse(r, gitlab.PushEvents, gitlab.MergeRequestEvents)
 		if err != nil {
 			if err == gitlab.ErrEventNotFound {
-				// ok event wasn;t one of the ones asked to be parsed
 				fmt.Println("Got an error here...")
 			}
 		}
@@ -77,8 +76,13 @@ func main() {
 			fmt.Printf("RepositoryUrl=%s\n", push.Repository.URL)
 			parts := strings.Split(push.Ref, "/") //Ref:refs/head/dev
 			fmt.Printf("Branch=%s\n", parts[2])
-			projectName := strings.ToLower(push.Project.Name)
-			client.CreateTaskRun(projectName)
+			
+			buildInfo := tektonutil.BuildInfo {
+				ProjectName: strings.ToLower(push.Project.Name),
+				CommitId: push.CheckoutSHA,
+			}
+			
+			client.CreateTaskRun(buildInfo)
 			
 		case gitlab.MergeRequestEventPayload:
 			fmt.Println("Merge request event detected...")

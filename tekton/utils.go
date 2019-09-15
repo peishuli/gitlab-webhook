@@ -8,13 +8,18 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+type BuildInfo struct {
+	ProjectName string
+	CommitId string
+}
+
 type Client struct {
 	TektonClient *tektonv1alpha1.TektonV1alpha1Client
 	K8sclient *k8s.Clientset
 }
 
-func (c Client) CreateTaskRun(projectName string) {
-	taskrundef := createTaskRunDef(projectName)
+func (c Client) CreateTaskRun(buildInfo BuildInfo) {
+	taskrundef := createTaskRunDef(buildInfo)
 	_, err := c.TektonClient.TaskRuns("default").Create(taskrundef)
 
 	if err != nil {
@@ -23,24 +28,33 @@ func (c Client) CreateTaskRun(projectName string) {
 
 }
 
-func createTaskRunDef(projectName string) *api.TaskRun {
+func createTaskRunDef(buildInfo BuildInfo) *api.TaskRun {
 
 	taskrun := api.TaskRun{
 		ObjectMeta: metav1.ObjectMeta {
-			GenerateName: fmt.Sprintf("%s-taskrun-", projectName),
+			GenerateName: fmt.Sprintf("%s-taskrun-", buildInfo.ProjectName),
 			Namespace: "default",
 		},
 		Spec: api.TaskRunSpec {
 			ServiceAccount: "build-bot",
 			TaskRef: &api.TaskRef {
-				Name: fmt.Sprintf("%s-build-task", projectName),	
+				Name: fmt.Sprintf("%s-build-task", buildInfo.ProjectName),	
 			},
 			Inputs: api.TaskRunInputs {
 				Resources: []api.TaskResourceBinding {
 					api.TaskResourceBinding{ 
 						Name: "source",
 						ResourceRef: api.PipelineResourceRef{
-							Name: fmt.Sprintf("%s-git", projectName),
+							Name: fmt.Sprintf("%s-git", buildInfo.ProjectName),
+						},
+					},
+				},
+				Params: []api.Param {
+					api.Param {
+						Name: "COMMITID",
+						Value: api.ArrayOrString{
+							Type: api.ParamTypeString,
+							StringVal: buildInfo.CommitId,
 						},
 					},
 				},
@@ -50,7 +64,7 @@ func createTaskRunDef(projectName string) *api.TaskRun {
 					api.TaskResourceBinding{ 
 						Name: "image",
 						ResourceRef: api.PipelineResourceRef{
-							Name: fmt.Sprintf("%s-image", projectName),
+							Name: fmt.Sprintf("%s-image", buildInfo.ProjectName),
 						},
 					},
 				},
