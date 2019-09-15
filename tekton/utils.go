@@ -6,8 +6,6 @@ import (
 	k8s "k8s.io/client-go/kubernetes"
 	api "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1" 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"strconv"
-	"time"
 )
 
 type Client struct {
@@ -29,20 +27,20 @@ func createTaskRunDef(projectName string) *api.TaskRun {
 
 	taskrun := api.TaskRun{
 		ObjectMeta: metav1.ObjectMeta {
-			Name: "identity-taskrun-" + strconv.FormatInt(time.Now().Unix(), 10) ,
+			GenerateName: fmt.Sprintf("%s-taskrun-", projectName),
 			Namespace: "default",
 		},
 		Spec: api.TaskRunSpec {
 			ServiceAccount: "build-bot",
 			TaskRef: &api.TaskRef {
-				Name: projectName + "-build-task",		
+				Name: fmt.Sprintf("%s-build-task", projectName),	
 			},
 			Inputs: api.TaskRunInputs {
 				Resources: []api.TaskResourceBinding {
 					api.TaskResourceBinding{ 
 						Name: "source",
 						ResourceRef: api.PipelineResourceRef{
-							Name: projectName + "-git",
+							Name: fmt.Sprintf("%s-git", projectName),
 						},
 					},
 				},
@@ -52,7 +50,7 @@ func createTaskRunDef(projectName string) *api.TaskRun {
 					api.TaskResourceBinding{ 
 						Name: "image",
 						ResourceRef: api.PipelineResourceRef{
-							Name: projectName + "-image",
+							Name: fmt.Sprintf("%s-image", projectName),
 						},
 					},
 				},
