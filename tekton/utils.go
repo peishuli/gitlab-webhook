@@ -20,6 +20,12 @@ type Client struct {
 }
 
 func (c Client) CreateTaskRun(buildInfo BuildInfo) {
+	// Create git pipeline resource if not exists
+	c.createGitResource(buildInfo)
+
+	// Create image pipeline resource if not exists
+	c.createImageResource(buildInfo)
+
 	// Create the build task if not exists (an idempontent opration)
 	c.createBuildTask(buildInfo)
 	
@@ -181,3 +187,56 @@ func createBuildTaskDef(buildInfo BuildInfo) *api.Task {
 	return &task
 }
 
+func (c Client) createGitResource(buildInfo BuildInfo) {
+	name := fmt.Sprintf("%s-git", buildInfo.ProjectName)
+	_, err := c.TektonClient.PipelineResources("default").Get(name, metav1.GetOptions{})
+
+	if err == nil  {
+		// named resourcealready exists
+		return
+	} 
+
+	url := fmt.Sprintf("https://gitlab.com/peishu/%s", buildInfo.ProjectName)
+	params := []api.ResourceParam{{Name: "revision", Value: "master"},{Name: "url", Value: url}}
+
+	resourceDef := createPipelineResourceDef(name, params, api.PipelineResourceTypeGit)
+
+	_, err = c.TektonClient.PipelineResources("default").Create(resourceDef)
+
+	if err != nil {
+		fmt.Printf("error creating taskrun: %v", err)
+	}
+	
+}
+
+func (c Client) createImageResource(buildInfo BuildInfo){
+	name := fmt.Sprintf("%s-image", buildInfo.ProjectName)
+	_, err := c.TektonClient.PipelineResources("default").Get(name, metav1.GetOptions{})
+
+	if err == nil  {
+		// named resourcealready exists
+		return
+	} 
+
+	url := fmt.Sprintf("registry.gitlab.com/peishu/%s", buildInfo.ProjectName)
+	params := []api.ResourceParam{{Name: "url", Value: url}}
+
+	resourceDef := createPipelineResourceDef(name, params, api.PipelineResourceTypeImage)
+
+	_, err = c.TektonClient.PipelineResources("default").Create(resourceDef)
+
+	if err != nil {
+		fmt.Printf("error creating taskrun: %v", err)
+	}
+}
+
+func createPipelineResourceDef(name string, params []api.ResourceParam, resourceType api.PipelineResourceType) *api.PipelineResource {
+	reource := api.PipelineResource{
+		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"},
+		Spec: api.PipelineResourceSpec{
+			Type:   resourceType,
+			Params: params,
+		},
+	}
+	return &reource
+}
