@@ -30,19 +30,41 @@ func (c Client) CreateTaskRun(buildInfo BuildInfo) {
 	c.createBuildTask(buildInfo)
 	
 	// Now create taskrun
-	taskrundef := createTaskRunDef(buildInfo)
+	taskrunDef := createTaskRunDef(buildInfo)
 
-	_, err := c.TektonClient.TaskRuns("default").Create(taskrundef)
+	_, err := c.TektonClient.TaskRuns("default").Create(taskrunDef)
 
 	if err != nil {
 		fmt.Printf("error creating taskrun: %v", err)
 	}
+}
 
+func (c Client) CreatePipelineRun(buildInfo BuildInfo) {
+	// Create git pipeline resource if not exists
+	c.createGitResource(buildInfo)
+
+	// Create image pipeline resource if not exists
+	c.createImageResource(buildInfo)
+
+	// Create the build task if not exists
+	c.createBuildTask(buildInfo)
+
+	// Create the pipeline if not exists
+	c.createPipeline(buildInfo)
+
+	// Now create pipelinerun
+	pipelinerunDef := createPipelineRunDef(buildInfo)
+
+	_, err := c.TektonClient.PipelineRuns("default").Create(pipelinerunDef)
+
+	if err != nil {
+		fmt.Printf("error creating pipelinerun: %v", err)
+	}
 }
 
 func createTaskRunDef(buildInfo BuildInfo) *api.TaskRun {
 
-	taskrun := api.TaskRun{
+	taskRun := api.TaskRun{
 		ObjectMeta: metav1.ObjectMeta {
 			GenerateName: fmt.Sprintf("%s-taskrun-", buildInfo.ProjectName),
 			Namespace: "default",
@@ -84,7 +106,48 @@ func createTaskRunDef(buildInfo BuildInfo) *api.TaskRun {
 		},
 	}
 
-	return &taskrun
+	return &taskRun
+}
+
+func createPipelineRunDef(buildInfo BuildInfo) *api.PipelineRun {
+	pipelineRun := api.PipelineRun {
+		ObjectMeta: metav1.ObjectMeta {
+			GenerateName: fmt.Sprintf("%s-pipelinerun-", buildInfo.ProjectName),
+			Namespace: "default",
+		},
+		Spec: api.PipelineRunSpec {
+			ServiceAccount: "build-bot",
+			PipelineRef: api.PipelineRef {
+				Name: fmt.Sprintf("%s-pipeline", buildInfo.ProjectName),
+			},
+			Resources: []api.PipelineResourceBinding {
+				api.PipelineResourceBinding {
+					Name: "source",
+					ResourceRef: api.PipelineResourceRef {
+						Name: fmt.Sprintf("%s-git", buildInfo.ProjectName),
+					},
+				
+				},
+				api.PipelineResourceBinding {
+					Name: "image",
+					ResourceRef: api.PipelineResourceRef {
+						Name: fmt.Sprintf("%s-image", buildInfo.ProjectName),
+					},
+				},
+			},
+			Params: []api.Param {
+				api.Param {
+					Name: "COMMITID",
+					Value: api.ArrayOrString {
+						Type: api.ParamTypeString,
+						StringVal: buildInfo.CommitId,
+					},
+				},
+			},
+		},
+	}
+
+	return &pipelineRun
 }
 
 func (c Client) createBuildTask(buildInfo BuildInfo) {
@@ -103,8 +166,6 @@ func (c Client) createBuildTask(buildInfo BuildInfo) {
 	if err != nil {
 		fmt.Printf("error creating task: %v", err)
 	}
-
-	
 }
 
 func createBuildTaskDef(buildInfo BuildInfo) *api.Task {
@@ -150,6 +211,10 @@ func createBuildTaskDef(buildInfo BuildInfo) *api.Task {
 					api.ParamSpec {
 						Name: "COMMITID",
 						Description: "Gitlab repo commit Id",
+						// Default: &api.ArrayOrString {
+						// 	Type: api.ParamTypeString,
+						// 	StringVal: "000000000000",
+						// },
 					},
 				},
 			},
@@ -185,6 +250,89 @@ func createBuildTaskDef(buildInfo BuildInfo) *api.Task {
 	}
 
 	return &task
+}
+
+func (c Client) createPipeline(buildInfo BuildInfo) {
+	pipelineName := fmt.Sprintf("%s-pipeline", buildInfo.ProjectName)
+	_, err := c.TektonClient.Pipelines("default").Get(pipelineName, metav1.GetOptions{})
+
+	if err == nil  {
+		// named pipeline already exists
+		return
+	} 
+	
+	pipelineDef := c.createPipelineDef(buildInfo)
+
+	_, err = c.TektonClient.Pipelines("default").Create(pipelineDef)
+
+	if err != nil {
+		fmt.Printf("error creating pipeline: %v", err)
+	}
+}
+
+func (c Client) createPipelineDef(buildInfo BuildInfo) *api.Pipeline {
+	pipeline := api.Pipeline {
+		ObjectMeta: metav1.ObjectMeta {
+			Name: fmt.Sprintf("%s-pipeline", buildInfo.ProjectName),
+			Namespace: "default",
+		},
+		Spec: api.PipelineSpec {
+			Resources: []api.PipelineDeclaredResource {
+				api.PipelineDeclaredResource {
+					Name: "source",
+					Type: api.PipelineResourceTypeGit,
+				},
+				api.PipelineDeclaredResource {
+					Name: "image",
+					Type: api.PipelineResourceTypeImage,
+				},
+			},
+			Params: []api.ParamSpec {
+				api.ParamSpec {
+					Name: "COMMITID",
+					Description: "Gitlab repo commit Id",
+					// Default: &api.ArrayOrString {
+					// 	Type: api.ParamTypeString,
+					// 	StringVal: "000000000000",
+					// },
+				},
+			},
+			Tasks: []api.PipelineTask {
+				api.PipelineTask {
+					Name: "build-and-push",
+					TaskRef: api.TaskRef {
+						Name: fmt.Sprintf("%s-build-task", buildInfo.ProjectName),
+					},
+					Params: []api.Param {
+						api.Param {
+							Name: "COMMITID",
+							Value: api.ArrayOrString{
+								Type: api.ParamTypeString,
+								StringVal: "${params.COMMITID}",
+							},
+						},
+					},
+					Resources: &api.PipelineTaskResources {
+						Inputs: []api.PipelineTaskInputResource {
+							api.PipelineTaskInputResource {
+								Name: "source",
+								Resource: "source",
+							},
+						},
+						Outputs: []api.PipelineTaskOutputResource {
+							api.PipelineTaskOutputResource {
+								Name: "image",
+								Resource: "image",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	
+
+	return &pipeline
 }
 
 func (c Client) createGitResource(buildInfo BuildInfo) {

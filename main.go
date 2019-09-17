@@ -82,7 +82,8 @@ func main() {
 				CommitId: push.CheckoutSHA,
 			}
 			
-			client.CreateTaskRun(buildInfo)
+			//client.CreateTaskRun(buildInfo)
+			client.CreatePipelineRun(buildInfo)
 			
 		case gitlab.MergeRequestEventPayload:
 			fmt.Println("Merge request event detected...")
