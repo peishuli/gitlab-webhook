@@ -19,25 +19,72 @@ type Client struct {
 	K8sclient *k8s.Clientset
 }
 
-func (c Client) CreateTaskRun(buildInfo BuildInfo) {
-	// Create git pipeline resource if not exists
-	c.createGitResource(buildInfo)
+// func (c Client) CreateTaskRun(buildInfo BuildInfo) {
+// 	// Create git pipeline resource if not exists
+// 	c.createGitResource(buildInfo)
 
-	// Create image pipeline resource if not exists
-	c.createImageResource(buildInfo)
+// 	// Create image pipeline resource if not exists
+// 	c.createImageResource(buildInfo)
 
-	// Create the build task if not exists (an idempontent opration)
-	c.createBuildTask(buildInfo)
+// 	// Create the build task if not exists (an idempontent opration)
+// 	c.createBuildTask(buildInfo)
 	
-	// Now create taskrun
-	taskrunDef := createTaskRunDef(buildInfo)
+// 	// Now create taskrun
+// 	taskrunDef := createTaskRunDef(buildInfo)
 
-	_, err := c.TektonClient.TaskRuns("default").Create(taskrunDef)
+// 	_, err := c.TektonClient.TaskRuns("default").Create(taskrunDef)
 
-	if err != nil {
-		fmt.Printf("error creating taskrun: %v", err)
-	}
-}
+// 	if err != nil {
+// 		fmt.Printf("error creating taskrun: %v", err)
+// 	}
+// }
+
+// func createTaskRunDef(buildInfo BuildInfo) *api.TaskRun {
+
+// 	taskRun := api.TaskRun{
+// 		ObjectMeta: metav1.ObjectMeta {
+// 			GenerateName: fmt.Sprintf("%s-taskrun-", buildInfo.ProjectName),
+// 			Namespace: "default",
+// 		},
+// 		Spec: api.TaskRunSpec {
+// 			ServiceAccount: "build-bot",
+// 			TaskRef: &api.TaskRef {
+// 				Name: fmt.Sprintf("%s-build-task", buildInfo.ProjectName),	
+// 			},
+// 			Inputs: api.TaskRunInputs {
+// 				Resources: []api.TaskResourceBinding {
+// 					api.TaskResourceBinding{ 
+// 						Name: "source",
+// 						ResourceRef: api.PipelineResourceRef{
+// 							Name: fmt.Sprintf("%s-git", buildInfo.ProjectName),
+// 						},
+// 					},
+// 				},
+// 				Params: []api.Param {
+// 					api.Param {
+// 						Name: "COMMITID",
+// 						Value: api.ArrayOrString{
+// 							Type: api.ParamTypeString,
+// 							StringVal: buildInfo.CommitId,
+// 						},
+// 					},
+// 				},
+// 			},	
+// 			Outputs: api.TaskRunOutputs {
+// 				Resources: []api.TaskResourceBinding {
+// 					api.TaskResourceBinding{ 
+// 						Name: "image",
+// 						ResourceRef: api.PipelineResourceRef{
+// 							Name: fmt.Sprintf("%s-image", buildInfo.ProjectName),
+// 						},
+// 					},
+// 				},
+// 			},		
+// 		},
+// 	}
+
+// 	return &taskRun
+// }
 
 func (c Client) CreatePipelineRun(buildInfo BuildInfo) {
 	// Create git pipeline resource if not exists
@@ -49,6 +96,9 @@ func (c Client) CreatePipelineRun(buildInfo BuildInfo) {
 	// Create the build task if not exists
 	c.createBuildTask(buildInfo)
 
+	// Create the push task if not exists
+	c.createPushTask(buildInfo)
+
 	// Create the pipeline if not exists
 	c.createPipeline(buildInfo)
 
@@ -58,55 +108,8 @@ func (c Client) CreatePipelineRun(buildInfo BuildInfo) {
 	_, err := c.TektonClient.PipelineRuns("default").Create(pipelinerunDef)
 
 	if err != nil {
-		fmt.Printf("error creating pipelinerun: %v", err)
+		fmt.Printf("error creating pipelinerun: %v\n", err)
 	}
-}
-
-func createTaskRunDef(buildInfo BuildInfo) *api.TaskRun {
-
-	taskRun := api.TaskRun{
-		ObjectMeta: metav1.ObjectMeta {
-			GenerateName: fmt.Sprintf("%s-taskrun-", buildInfo.ProjectName),
-			Namespace: "default",
-		},
-		Spec: api.TaskRunSpec {
-			ServiceAccount: "build-bot",
-			TaskRef: &api.TaskRef {
-				Name: fmt.Sprintf("%s-build-task", buildInfo.ProjectName),	
-			},
-			Inputs: api.TaskRunInputs {
-				Resources: []api.TaskResourceBinding {
-					api.TaskResourceBinding{ 
-						Name: "source",
-						ResourceRef: api.PipelineResourceRef{
-							Name: fmt.Sprintf("%s-git", buildInfo.ProjectName),
-						},
-					},
-				},
-				Params: []api.Param {
-					api.Param {
-						Name: "COMMITID",
-						Value: api.ArrayOrString{
-							Type: api.ParamTypeString,
-							StringVal: buildInfo.CommitId,
-						},
-					},
-				},
-			},	
-			Outputs: api.TaskRunOutputs {
-				Resources: []api.TaskResourceBinding {
-					api.TaskResourceBinding{ 
-						Name: "image",
-						ResourceRef: api.PipelineResourceRef{
-							Name: fmt.Sprintf("%s-image", buildInfo.ProjectName),
-						},
-					},
-				},
-			},		
-		},
-	}
-
-	return &taskRun
 }
 
 func createPipelineRunDef(buildInfo BuildInfo) *api.PipelineRun {
@@ -141,6 +144,48 @@ func createPipelineRunDef(buildInfo BuildInfo) *api.PipelineRun {
 					Value: api.ArrayOrString {
 						Type: api.ParamTypeString,
 						StringVal: buildInfo.CommitId,
+					},
+				},
+				api.Param {
+					Name: "VALUES_FILE",
+					Value: api.ArrayOrString {
+						Type: api.ParamTypeString,
+						StringVal: "values.yaml", //TODO: buildInfo.ValuesFile,
+					},
+				},
+				api.Param {
+					Name: "GIT_EMAIL",
+					Value: api.ArrayOrString {
+						Type: api.ParamTypeString,
+						StringVal: "peishuli62@gitlab.com", //TODO: buildInfo.GitlabEmail,
+					},
+				},
+				api.Param {
+					Name: "GIT_USERNAME",
+					Value: api.ArrayOrString {
+						Type: api.ParamTypeString,
+						StringVal: "peishu", //TODO: buildInfo.GitlabUsername,
+					},
+				},
+				api.Param {
+					Name: "GIT_PASSWORD",
+					Value: api.ArrayOrString {
+						Type: api.ParamTypeString,
+						StringVal: "Pass%40word1",//TODO: buildInfo.GitlabPassword,
+					},
+				},
+				api.Param {
+					Name: "GIT_GROUP",
+					Value: api.ArrayOrString {
+						Type: api.ParamTypeString,
+						StringVal: "peishu",//TODO: buildInfo.GitlabGroup,
+					},
+				},
+				api.Param {
+					Name: "GIT_REPO",
+					Value: api.ArrayOrString {
+						Type: api.ParamTypeString,
+						StringVal: "identity-config",//TODO: buildInfo.GitlabConfigRepository,
 					},
 				},
 			},
@@ -210,11 +255,7 @@ func createBuildTaskDef(buildInfo BuildInfo) *api.Task {
 					},
 					api.ParamSpec {
 						Name: "COMMITID",
-						Description: "Gitlab repo commit Id",
-						// Default: &api.ArrayOrString {
-						// 	Type: api.ParamTypeString,
-						// 	StringVal: "000000000000",
-						// },
+						Description: "Gitlab repo commit Id",						
 					},
 				},
 			},
@@ -239,7 +280,7 @@ func createBuildTaskDef(buildInfo BuildInfo) *api.Task {
 							"--frontend=dockerfile.v0",
 							"--opt", "filename=${inputs.params.DOCKERFILE}",
 							"--local", "context=.", "--local", "dockerfile=.",
-							"--output", "type=image,name=${outputs.resources.image.url}:dev-$(inputs.params.COMMITID),push=true",
+							"--output", "type=image,name=${outputs.resources.image.url}:${inputs.params.COMMITID},push=true",
 							"--export-cache", "type=inline",
 							"--import-cache", "type=registry,ref=${outputs.resources.image.url}",
 						},
@@ -251,6 +292,105 @@ func createBuildTaskDef(buildInfo BuildInfo) *api.Task {
 
 	return &task
 }
+
+func (c Client) createPushTask(buildInfo BuildInfo) {
+	taskName := fmt.Sprintf("%s-push-to-git-task", buildInfo.ProjectName)
+	//_, err := c.TektonClient.Tasks("default").Get(taskName, metav1.GetOptions{})
+	task, err := c.TektonClient.Tasks("default").Get(taskName, metav1.GetOptions{})
+	
+
+	if err == nil  {
+		// named task already exists
+		fmt.Printf("An existing task %s was found\n", taskName)	
+		fmt.Printf("task_command_args = %s\n", task.Spec.Steps[0].Args[0])
+
+		return
+	} 
+	
+	taskDef := createPushTaskDef(buildInfo)
+	_, err = c.TektonClient.Tasks("default").Create(taskDef)
+	
+	if err != nil {
+		fmt.Printf("Task creation error: %s.\n", err.Error())
+	} else {
+		fmt.Printf("Task %s was created\n", taskName)
+	}
+	
+}
+
+func createPushTaskDef(buildInfo BuildInfo) *api.Task {
+	// define the commands
+	argsString := "git config --global user.email \"${inputs.params.GIT_EMAIL}@gitlab.com\"\n"
+	argsString += "git config --global user.name \"${inputs.params.GIT_USERNAME}\"\n"
+	argsString += "git remote set-url origin git@gitlab.com/${inputs.params.GIT_GROUP}/${inputs.params.GIT_REPO}.git\n"
+	argsString += "git clone https://${inputs.params.GIT_USERNAME}:${inputs.params.GIT_PASSWORD}@gitlab.com/${inputs.params.GIT_GROUP}/${inputs.params.GIT_REPO}.git\n"
+	argsString += "cd ${inputs.params.GIT_REPO}\n"
+	argsString += "cat ${inputs.params.VALUES_FILE} | yq w - image.tag ${inputs.params.COMMITID}> values2.yaml && mv values2.yaml ${inputs.params.VALUES_FILE}\n"
+	argsString += "git add .\n"
+	argsString += "git commit -m \"Image tag updated by the webhook.\"\n"
+	argsString += "git push"	
+	
+	task := api.Task {
+		ObjectMeta: metav1.ObjectMeta {
+			Name: fmt.Sprintf("%s-push-to-git-task", buildInfo.ProjectName),
+			Namespace: "default",
+		},
+		Spec: api.TaskSpec {
+			Inputs: &api.Inputs {
+				Params: []api.ParamSpec {
+					api.ParamSpec {
+						Name: "COMMITID",
+						Description: "Gitlab repo commit Id",						
+					},
+					api.ParamSpec {
+						Name: "VALUES_FILE",
+						Description: "The name of the values file of the Helm chart",
+						Default: &api.ArrayOrString {
+							Type: api.ParamTypeString,
+							StringVal: "values.yaml",
+						},
+					},
+					api.ParamSpec {
+						Name: "GIT_EMAIL",
+						Description: "The email address of the gitlab account",						
+					},
+					api.ParamSpec {
+						Name: "GIT_USERNAME",
+						Description: "The Gitlab username",						
+					},
+					api.ParamSpec {
+						Name: "GIT_PASSWORD",
+						Description: "The Gitlab password (urlencode)",						
+					},
+					api.ParamSpec {
+						Name: "GIT_GROUP",
+						Description: "The Gitlab group name",						
+					},
+					api.ParamSpec {
+						Name: "GIT_REPO",
+						Description: "The Gitlab config repository name",						
+					},
+										
+				},
+			},
+			Steps: []api.Step {
+				api.Step {
+					corev1.Container {
+						Name: "update-config-repo",
+						Image: "peishu/yq-git",
+						Command: []string {"/bin/sh", "-c"},
+						Args: []string { 							
+							argsString,
+						},						
+					},
+				},
+			},
+		},
+	}	    
+
+	return &task
+}
+
 
 func (c Client) createPipeline(buildInfo BuildInfo) {
 	pipelineName := fmt.Sprintf("%s-pipeline", buildInfo.ProjectName)
@@ -290,11 +430,32 @@ func (c Client) createPipelineDef(buildInfo BuildInfo) *api.Pipeline {
 			Params: []api.ParamSpec {
 				api.ParamSpec {
 					Name: "COMMITID",
-					Description: "Gitlab repo commit Id",
-					// Default: &api.ArrayOrString {
-					// 	Type: api.ParamTypeString,
-					// 	StringVal: "000000000000",
-					// },
+					Description: "Gitlab repo commit Id",	
+				},
+
+				api.ParamSpec {
+					Name: "VALUES_FILE",
+					Description: "The name of the Helm chart values file",	
+				},
+				api.ParamSpec {
+					Name: "GIT_EMAIL",
+					Description: "The Gitlab email address",	
+				},
+				api.ParamSpec {
+					Name: "GIT_USERNAME",
+					Description: "The Gitlab username",	
+				},
+				api.ParamSpec {
+					Name: "GIT_PASSWORD",
+					Description: "The Gitlab password (urlencoded)",	
+				},
+				api.ParamSpec {
+					Name: "GIT_GROUP",
+					Description: "The Gitlab group name",	
+				},
+				api.ParamSpec {
+					Name: "GIT_REPO",
+					Description: "The Gitlab config repository name",	
 				},
 			},
 			Tasks: []api.PipelineTask {
@@ -326,6 +487,71 @@ func (c Client) createPipelineDef(buildInfo BuildInfo) *api.Pipeline {
 							},
 						},
 					},
+				},
+				api.PipelineTask {
+					Name: "update-config-repo",
+					RunAfter: []string {"build-and-push"},
+					TaskRef: api.TaskRef {
+						Name: fmt.Sprintf("%s-push-to-git-task", buildInfo.ProjectName),
+					},
+					Params: []api.Param {
+						api.Param {
+							Name: "COMMITID",
+							Value: api.ArrayOrString{
+								Type: api.ParamTypeString,
+								StringVal: "${params.COMMITID}",
+							},
+						},
+						api.Param {
+							Name: "COMMITID",
+							Value: api.ArrayOrString{
+								Type: api.ParamTypeString,
+								StringVal: "${params.COMMITID}",
+							},
+						},
+						api.Param {
+							Name: "VALUES_FILE",
+							Value: api.ArrayOrString{
+								Type: api.ParamTypeString,
+								StringVal: "${params.VALUES_FILE}",
+							},
+						},
+						api.Param {
+							Name: "GIT_EMAIL",
+							Value: api.ArrayOrString{
+								Type: api.ParamTypeString,
+								StringVal: "${params.GIT_EMAIL}",
+							},
+						},
+						api.Param {
+							Name: "GIT_USERNAME",
+							Value: api.ArrayOrString{
+								Type: api.ParamTypeString,
+								StringVal: "${params.GIT_USERNAME}",
+							},
+						},
+						api.Param {
+							Name: "GIT_PASSWORD",
+							Value: api.ArrayOrString{
+								Type: api.ParamTypeString,
+								StringVal: "${params.GIT_PASSWORD}",
+							},
+						},
+						api.Param {
+							Name: "GIT_GROUP",
+							Value: api.ArrayOrString{
+								Type: api.ParamTypeString,
+								StringVal: "${params.GIT_GROUP}",
+							},
+						},
+						api.Param {
+							Name: "GIT_REPO",
+							Value: api.ArrayOrString{
+								Type: api.ParamTypeString,
+								StringVal: "${params.GIT_REPO}",
+							},
+						},
+					},					
 				},
 			},
 		},
