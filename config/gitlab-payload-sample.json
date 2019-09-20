@@ -1,0 +1,61 @@
+{
+    "object_kind": "push",
+    "event_name": "push",
+    "before": "5c38ba99420ea8370397e750b929c997b317cc89",
+    "after": "f90e46d37d2eea74b9817f5ce8f15e55d6b9ca42",
+    "ref": "refs/heads/master",
+    "checkout_sha": "f90e46d37d2eea74b9817f5ce8f15e55d6b9ca42",
+    "message": null,
+    "user_id": 2932715,
+    "user_name": "Peishu Li",
+    "user_username": "peishu",
+    "user_email": "",
+    "user_avatar": "https://secure.gravatar.com/avatar/9b238ac6638aa97245ad83385acaf5ff?s=80&d=identicon",
+    "project_id": 11795435,
+    "project": {
+        "id": 11795435,
+        "name": "Identity",
+        "description": "",
+        "web_url": "https://gitlab.com/peishu/identity",
+        "avatar_url": null,
+        "git_ssh_url": "git@gitlab.com:peishu/identity.git",
+        "git_http_url": "https://gitlab.com/peishu/identity.git",
+        "namespace": "Peishu Li",
+        "visibility_level": 0,
+        "path_with_namespace": "peishu/identity",
+        "default_branch": "master",
+        "ci_config_path": null,
+        "homepage": "https://gitlab.com/peishu/identity",
+        "url": "git@gitlab.com:peishu/identity.git",
+        "ssh_url": "git@gitlab.com:peishu/identity.git",
+        "http_url": "https://gitlab.com/peishu/identity.git"
+    },
+    "commits": [
+        {
+            "id": "f90e46d37d2eea74b9817f5ce8f15e55d6b9ca42",
+            "message": "Update Config.cs",
+            "timestamp": "2019-09-19T04:38:59Z",
+            "url": "https://gitlab.com/peishu/identity/commit/f90e46d37d2eea74b9817f5ce8f15e55d6b9ca42",
+            "author": {
+                "name": "Peishu Li",
+                "email": "peishuli62@gmail.com"
+            },
+            "added": [],
+            "modified": [
+                "IdentityServer/Config.cs"
+            ],
+            "removed": []
+        }
+    ],
+    "total_commits_count": 1,
+    "push_options": {},
+    "repository": {
+        "name": "Identity",
+        "url": "git@gitlab.com:peishu/identity.git",
+        "description": "",
+        "homepage": "https://gitlab.com/peishu/identity",
+        "git_http_url": "https://gitlab.com/peishu/identity.git",
+        "git_ssh_url": "git@gitlab.com:peishu/identity.git",
+        "visibility_level": 0
+    }
+}

@@ -25,6 +25,14 @@ func main() {
 
 	flag.Parse()
 
+	namespace := os.Getenv("namespace")
+	valuesFile := os.Getenv("valuesFile")
+	gitlabEmail := os.Getenv("gitlabEmail")
+	gitlabUsername := os.Getenv("gitlabUsername")
+	gitlabPassword := os.Getenv("gitlabPassword")
+	gitlabSecretToken := os.Getenv("gitlabSecretToken")
+	gitlabGroup := os.Getenv("gitlabGroup")
+
 	var config *rest.Config
 	var err error
 	kubeconfig := os.Getenv("KUBECONFIG")
@@ -54,7 +62,7 @@ func main() {
 	}	
 
 	
-	hook, _ := gitlab.New(gitlab.Options.Secret("MyGitLabSuperSecretSecrect"))
+	hook, _ := gitlab.New(gitlab.Options.Secret(gitlabSecretToken))
 
 	http.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
 
@@ -68,46 +76,56 @@ func main() {
 		switch payload.(type) {
 
 		case gitlab.PushEventPayload:
-			//TODO: parameterize create task runs
 			fmt.Println("Push event detected...")
 			push := payload.(gitlab.PushEventPayload)
-			fmt.Printf("%+v", push)
-			fmt.Printf("CommitId=%s\n", push.CheckoutSHA)
-			fmt.Printf("RepositoryUrl=%s\n", push.Repository.URL)
-			parts := strings.Split(push.Ref, "/") //Ref:refs/head/dev
-			fmt.Printf("Branch=%s\n", parts[2])
 			
 			buildInfo := tektonutil.BuildInfo {
 				ProjectName: strings.ToLower(push.Project.Name),
 				CommitId: push.CheckoutSHA,
+				Namespace: namespace,
+				ValuesFile: valuesFile,
+				GitlabEmail: gitlabEmail,
+				GitlabUsername: gitlabUsername, 
+				GitlabPassword: gitlabPassword,
+				GitlabGroup: gitlabGroup,
+				GitlabConfigRepository: fmt.Sprintf("%s-config", push.Project.Name),
+				Revision: push.Project.DefaultBranch, 
+
 			}
-			
-			//client.CreateTaskRun(buildInfo)
+
 			client.CreatePipelineRun(buildInfo)
 			
 		case gitlab.MergeRequestEventPayload:
 			fmt.Println("Merge request event detected...")
-			mergeRequest := payload.(gitlab.MergeRequestEventPayload)
-			// Do whatever you want from here...
-			//fmt.Printf("%+v", mergeRequest)
-			fmt.Printf("CommitId=%s\n", mergeRequest.ObjectAttributes.SHA)
-			fmt.Printf("RepositoryUrl=%s\n", mergeRequest.Repository.URL)
-			fmt.Printf("Branch=%s\n", mergeRequest.ObjectAttributes.TargetBranch)
+			mergeRequest := payload.(gitlab.MergeRequestEventPayload)	
 
-		case gitlab.TagEventPayload:
-			fmt.Println("Tag event detected...")
+			buildInfo := tektonutil.BuildInfo {
+				ProjectName: strings.ToLower(mergeRequest.Project.Name),
+				CommitId: mergeRequest.ObjectAttributes.SHA,
+				Namespace: namespace,
+				ValuesFile: valuesFile,
+				GitlabEmail: gitlabEmail,
+				GitlabUsername: gitlabUsername, 
+				GitlabPassword: gitlabPassword,
+				GitlabGroup: gitlabGroup,
+				GitlabConfigRepository: fmt.Sprintf("%s-config", mergeRequest.Project.Name ),
+				Revision: mergeRequest.Project.DefaultBranch,
+			}
+
+			client.CreatePipelineRun(buildInfo)
 
 		default:
-			fmt.Println("Unknown event detected...")
+			fmt.Printf("Unknown event detected...\n%s\n", payload)
 		}
 	})
 
 	port := os.Getenv("PORT")
-	if port != "" {
-		port = ":" + port
+	if port == "" {
+		port = "8080"
 	}
-	fmt.Printf("Webhook listieng to port %s...\n", port)
-	//http.ListenAndServe(port, nil)
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	
+	fmt.Printf("Webhook is listieng to port %s...\n", port)
+	
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), nil))
 }
 

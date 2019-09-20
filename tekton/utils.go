@@ -12,6 +12,14 @@ import (
 type BuildInfo struct {
 	ProjectName string
 	CommitId string
+	Namespace string
+	ValuesFile string
+	GitlabEmail string
+	GitlabUsername string
+	GitlabPassword string
+	GitlabGroup string
+	GitlabConfigRepository string
+	Revision string
 }
 
 type Client struct {
@@ -19,72 +27,6 @@ type Client struct {
 	K8sclient *k8s.Clientset
 }
 
-// func (c Client) CreateTaskRun(buildInfo BuildInfo) {
-// 	// Create git pipeline resource if not exists
-// 	c.createGitResource(buildInfo)
-
-// 	// Create image pipeline resource if not exists
-// 	c.createImageResource(buildInfo)
-
-// 	// Create the build task if not exists (an idempontent opration)
-// 	c.createBuildTask(buildInfo)
-	
-// 	// Now create taskrun
-// 	taskrunDef := createTaskRunDef(buildInfo)
-
-// 	_, err := c.TektonClient.TaskRuns("default").Create(taskrunDef)
-
-// 	if err != nil {
-// 		fmt.Printf("error creating taskrun: %v", err)
-// 	}
-// }
-
-// func createTaskRunDef(buildInfo BuildInfo) *api.TaskRun {
-
-// 	taskRun := api.TaskRun{
-// 		ObjectMeta: metav1.ObjectMeta {
-// 			GenerateName: fmt.Sprintf("%s-taskrun-", buildInfo.ProjectName),
-// 			Namespace: "default",
-// 		},
-// 		Spec: api.TaskRunSpec {
-// 			ServiceAccount: "build-bot",
-// 			TaskRef: &api.TaskRef {
-// 				Name: fmt.Sprintf("%s-build-task", buildInfo.ProjectName),	
-// 			},
-// 			Inputs: api.TaskRunInputs {
-// 				Resources: []api.TaskResourceBinding {
-// 					api.TaskResourceBinding{ 
-// 						Name: "source",
-// 						ResourceRef: api.PipelineResourceRef{
-// 							Name: fmt.Sprintf("%s-git", buildInfo.ProjectName),
-// 						},
-// 					},
-// 				},
-// 				Params: []api.Param {
-// 					api.Param {
-// 						Name: "COMMITID",
-// 						Value: api.ArrayOrString{
-// 							Type: api.ParamTypeString,
-// 							StringVal: buildInfo.CommitId,
-// 						},
-// 					},
-// 				},
-// 			},	
-// 			Outputs: api.TaskRunOutputs {
-// 				Resources: []api.TaskResourceBinding {
-// 					api.TaskResourceBinding{ 
-// 						Name: "image",
-// 						ResourceRef: api.PipelineResourceRef{
-// 							Name: fmt.Sprintf("%s-image", buildInfo.ProjectName),
-// 						},
-// 					},
-// 				},
-// 			},		
-// 		},
-// 	}
-
-// 	return &taskRun
-// }
 
 func (c Client) CreatePipelineRun(buildInfo BuildInfo) {
 	// Create git pipeline resource if not exists
@@ -105,7 +47,7 @@ func (c Client) CreatePipelineRun(buildInfo BuildInfo) {
 	// Now create pipelinerun
 	pipelinerunDef := createPipelineRunDef(buildInfo)
 
-	_, err := c.TektonClient.PipelineRuns("default").Create(pipelinerunDef)
+	_, err := c.TektonClient.PipelineRuns(buildInfo.Namespace).Create(pipelinerunDef)
 
 	if err != nil {
 		fmt.Printf("error creating pipelinerun: %v\n", err)
@@ -116,7 +58,7 @@ func createPipelineRunDef(buildInfo BuildInfo) *api.PipelineRun {
 	pipelineRun := api.PipelineRun {
 		ObjectMeta: metav1.ObjectMeta {
 			GenerateName: fmt.Sprintf("%s-pipelinerun-", buildInfo.ProjectName),
-			Namespace: "default",
+			Namespace: buildInfo.Namespace,
 		},
 		Spec: api.PipelineRunSpec {
 			ServiceAccount: "build-bot",
@@ -150,42 +92,42 @@ func createPipelineRunDef(buildInfo BuildInfo) *api.PipelineRun {
 					Name: "VALUES_FILE",
 					Value: api.ArrayOrString {
 						Type: api.ParamTypeString,
-						StringVal: "values.yaml", //TODO: buildInfo.ValuesFile,
+						StringVal: buildInfo.ValuesFile, //"values.yaml"
 					},
 				},
 				api.Param {
 					Name: "GIT_EMAIL",
 					Value: api.ArrayOrString {
 						Type: api.ParamTypeString,
-						StringVal: "peishuli62@gitlab.com", //TODO: buildInfo.GitlabEmail,
+						StringVal: buildInfo.GitlabEmail, //"peishuli62@gitlab.com"
 					},
 				},
 				api.Param {
 					Name: "GIT_USERNAME",
 					Value: api.ArrayOrString {
 						Type: api.ParamTypeString,
-						StringVal: "peishu", //TODO: buildInfo.GitlabUsername,
+						StringVal: buildInfo.GitlabUsername, //"peishu"
 					},
 				},
 				api.Param {
 					Name: "GIT_PASSWORD",
 					Value: api.ArrayOrString {
 						Type: api.ParamTypeString,
-						StringVal: "Pass%40word1",//TODO: buildInfo.GitlabPassword,
+						StringVal: buildInfo.GitlabPassword, //"Pass%40word1"
 					},
 				},
 				api.Param {
 					Name: "GIT_GROUP",
 					Value: api.ArrayOrString {
 						Type: api.ParamTypeString,
-						StringVal: "peishu",//TODO: buildInfo.GitlabGroup,
+						StringVal: buildInfo.GitlabGroup, //"peishu"
 					},
 				},
 				api.Param {
 					Name: "GIT_REPO",
 					Value: api.ArrayOrString {
 						Type: api.ParamTypeString,
-						StringVal: "identity-config",//TODO: buildInfo.GitlabConfigRepository,
+						StringVal: buildInfo.GitlabConfigRepository, //"identity-config" 
 					},
 				},
 			},
@@ -197,7 +139,7 @@ func createPipelineRunDef(buildInfo BuildInfo) *api.PipelineRun {
 
 func (c Client) createBuildTask(buildInfo BuildInfo) {
 	taskName := fmt.Sprintf("%s-build-task", buildInfo.ProjectName)
-	_, err := c.TektonClient.Tasks("default").Get(taskName, metav1.GetOptions{})
+	_, err := c.TektonClient.Tasks(buildInfo.Namespace).Get(taskName, metav1.GetOptions{})
 
 	if err == nil  {
 		// named task already exists
@@ -206,7 +148,7 @@ func (c Client) createBuildTask(buildInfo BuildInfo) {
 	
 	taskDef := createBuildTaskDef(buildInfo)
 
-	_, err = c.TektonClient.Tasks("default").Create(taskDef)
+	_, err = c.TektonClient.Tasks(buildInfo.Namespace).Create(taskDef)
 
 	if err != nil {
 		fmt.Printf("error creating task: %v", err)
@@ -218,7 +160,7 @@ func createBuildTaskDef(buildInfo BuildInfo) *api.Task {
 	task := api.Task {
 		ObjectMeta: metav1.ObjectMeta {
 			Name: fmt.Sprintf("%s-build-task", buildInfo.ProjectName),
-			Namespace: "default",
+			Namespace: buildInfo.Namespace,
 		},
 		Spec: api.TaskSpec {
 			Inputs: &api.Inputs {
@@ -295,27 +237,20 @@ func createBuildTaskDef(buildInfo BuildInfo) *api.Task {
 
 func (c Client) createPushTask(buildInfo BuildInfo) {
 	taskName := fmt.Sprintf("%s-push-to-git-task", buildInfo.ProjectName)
-	//_, err := c.TektonClient.Tasks("default").Get(taskName, metav1.GetOptions{})
-	task, err := c.TektonClient.Tasks("default").Get(taskName, metav1.GetOptions{})
+	_, err := c.TektonClient.Tasks(buildInfo.Namespace).Get(taskName, metav1.GetOptions{})
 	
-
 	if err == nil  {
 		// named task already exists
 		fmt.Printf("An existing task %s was found\n", taskName)	
-		fmt.Printf("task_command_args = %s\n", task.Spec.Steps[0].Args[0])
-
 		return
 	} 
 	
 	taskDef := createPushTaskDef(buildInfo)
-	_, err = c.TektonClient.Tasks("default").Create(taskDef)
+	_, err = c.TektonClient.Tasks(buildInfo.Namespace).Create(taskDef)
 	
 	if err != nil {
 		fmt.Printf("Task creation error: %s.\n", err.Error())
-	} else {
-		fmt.Printf("Task %s was created\n", taskName)
-	}
-	
+	} 
 }
 
 func createPushTaskDef(buildInfo BuildInfo) *api.Task {
@@ -333,7 +268,7 @@ func createPushTaskDef(buildInfo BuildInfo) *api.Task {
 	task := api.Task {
 		ObjectMeta: metav1.ObjectMeta {
 			Name: fmt.Sprintf("%s-push-to-git-task", buildInfo.ProjectName),
-			Namespace: "default",
+			Namespace: buildInfo.Namespace,
 		},
 		Spec: api.TaskSpec {
 			Inputs: &api.Inputs {
@@ -394,7 +329,7 @@ func createPushTaskDef(buildInfo BuildInfo) *api.Task {
 
 func (c Client) createPipeline(buildInfo BuildInfo) {
 	pipelineName := fmt.Sprintf("%s-pipeline", buildInfo.ProjectName)
-	_, err := c.TektonClient.Pipelines("default").Get(pipelineName, metav1.GetOptions{})
+	_, err := c.TektonClient.Pipelines(buildInfo.Namespace).Get(pipelineName, metav1.GetOptions{})
 
 	if err == nil  {
 		// named pipeline already exists
@@ -403,7 +338,7 @@ func (c Client) createPipeline(buildInfo BuildInfo) {
 	
 	pipelineDef := c.createPipelineDef(buildInfo)
 
-	_, err = c.TektonClient.Pipelines("default").Create(pipelineDef)
+	_, err = c.TektonClient.Pipelines(buildInfo.Namespace).Create(pipelineDef)
 
 	if err != nil {
 		fmt.Printf("error creating pipeline: %v", err)
@@ -414,7 +349,7 @@ func (c Client) createPipelineDef(buildInfo BuildInfo) *api.Pipeline {
 	pipeline := api.Pipeline {
 		ObjectMeta: metav1.ObjectMeta {
 			Name: fmt.Sprintf("%s-pipeline", buildInfo.ProjectName),
-			Namespace: "default",
+			Namespace: buildInfo.Namespace,
 		},
 		Spec: api.PipelineSpec {
 			Resources: []api.PipelineDeclaredResource {
@@ -563,19 +498,19 @@ func (c Client) createPipelineDef(buildInfo BuildInfo) *api.Pipeline {
 
 func (c Client) createGitResource(buildInfo BuildInfo) {
 	name := fmt.Sprintf("%s-git", buildInfo.ProjectName)
-	_, err := c.TektonClient.PipelineResources("default").Get(name, metav1.GetOptions{})
+	_, err := c.TektonClient.PipelineResources(buildInfo.Namespace).Get(name, metav1.GetOptions{})
 
 	if err == nil  {
 		// named resourcealready exists
 		return
 	} 
 
-	url := fmt.Sprintf("https://gitlab.com/peishu/%s", buildInfo.ProjectName)
-	params := []api.ResourceParam{{Name: "revision", Value: "master"},{Name: "url", Value: url}}
+	url := fmt.Sprintf("https://gitlab.com/%s/%s", buildInfo.GitlabGroup, buildInfo.ProjectName)
+	params := []api.ResourceParam{{Name: "revision", Value: buildInfo.Revision},{Name: "url", Value: url}}
 
-	resourceDef := createPipelineResourceDef(name, params, api.PipelineResourceTypeGit)
+	resourceDef := createPipelineResourceDef(name, params, api.PipelineResourceTypeGit, buildInfo)
 
-	_, err = c.TektonClient.PipelineResources("default").Create(resourceDef)
+	_, err = c.TektonClient.PipelineResources(buildInfo.Namespace).Create(resourceDef)
 
 	if err != nil {
 		fmt.Printf("error creating taskrun: %v", err)
@@ -585,28 +520,28 @@ func (c Client) createGitResource(buildInfo BuildInfo) {
 
 func (c Client) createImageResource(buildInfo BuildInfo){
 	name := fmt.Sprintf("%s-image", buildInfo.ProjectName)
-	_, err := c.TektonClient.PipelineResources("default").Get(name, metav1.GetOptions{})
+	_, err := c.TektonClient.PipelineResources(buildInfo.Namespace).Get(name, metav1.GetOptions{})
 
 	if err == nil  {
 		// named resourcealready exists
 		return
 	} 
 
-	url := fmt.Sprintf("registry.gitlab.com/peishu/%s", buildInfo.ProjectName)
+	url := fmt.Sprintf("registry.gitlab.com/%s/%s", buildInfo.GitlabGroup, buildInfo.ProjectName)
 	params := []api.ResourceParam{{Name: "url", Value: url}}
 
-	resourceDef := createPipelineResourceDef(name, params, api.PipelineResourceTypeImage)
+	resourceDef := createPipelineResourceDef(name, params, api.PipelineResourceTypeImage, buildInfo)
 
-	_, err = c.TektonClient.PipelineResources("default").Create(resourceDef)
+	_, err = c.TektonClient.PipelineResources(buildInfo.Namespace).Create(resourceDef)
 
 	if err != nil {
 		fmt.Printf("error creating taskrun: %v", err)
 	}
 }
 
-func createPipelineResourceDef(name string, params []api.ResourceParam, resourceType api.PipelineResourceType) *api.PipelineResource {
+func createPipelineResourceDef(name string, params []api.ResourceParam, resourceType api.PipelineResourceType, buildInfo BuildInfo) *api.PipelineResource {
 	reource := api.PipelineResource{
-		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"},
+		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: buildInfo.Namespace},
 		Spec: api.PipelineResourceSpec{
 			Type:   resourceType,
 			Params: params,

@@ -15,8 +15,31 @@ spec:
         app: webhook
     spec:
       containers:
-      - image: peishu/webhook:v1
-        name: webhook
-        ports:
-        - containerPort: 8080
+        - env:
+            - name: namespace
+              value: default
+            - name: port
+              value: "8080"
+            - name: valuesFile
+              value: values.yaml
+            - name: gitlabEmail
+              value: "peishuli62@gitlab.com"
+            - name: gitlabUsername
+              value: peishu
+            - name: gitlabPassword
+              valueFrom:
+                secretKeyRef:
+                  key: encodedPassword
+                  name: regcred
+            - name: gitlabGroup
+              value: peishu
+            - name: gitlabSecretToken
+              valueFrom:
+                secretKeyRef:
+                  key: gitlabSecretToken
+                  name: regcred
+          image: peishu/webhook:v1
+          name: webhook
+          ports:
+            - containerPort: 8080
   
