@@ -62,7 +62,7 @@ kubectl patch svc tekton-dashboard -n tekton-pipelines -p '{"spec": {"type": "Lo
 - [Webhook](http://65.52.39.93:8080/webhook)
 
 ## Notes:
-ArgoCD's (resync)  interval is hardcoded as 3 minutes (defaultAppResyncPeriod = 180) in https://github.com/argoproj/argo-cd/blob/master/cmd/argocd-application-controller/main.go
+ArgoCD's (resync)  interval is hardcoded as 3 minutes (defaultAppResyncPeriod = 180) in https://github.com/argoproj/argo-cd/blob/master/cmd/argocd-application-controller/main.go. This behavior can be overwritten via argocd webhook (i.e., push vs pull)
 
 
 
