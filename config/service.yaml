@@ -4,6 +4,7 @@ metadata:
   labels:
     app: webhook
   name: webhook
+  namespace: default
 spec:
   ports:
   - name: 8080-8080

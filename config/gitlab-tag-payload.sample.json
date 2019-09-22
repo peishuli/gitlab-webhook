@@ -1,0 +1,61 @@
+{
+    "object_kind": "tag_push",
+    "event_name": "tag_push",
+    "before": "0000000000000000000000000000000000000000",
+    "after": "4ecc6f9d37d3590930db00912af936729cd2cab0",
+    "ref": "refs/tags/test",
+    "checkout_sha": "4ecc6f9d37d3590930db00912af936729cd2cab0",
+    "message": "",
+    "user_id": 2932715,
+    "user_name": "Peishu Li",
+    "user_username": "peishu",
+    "user_email": "",
+    "user_avatar": "https://secure.gravatar.com/avatar/9b238ac6638aa97245ad83385acaf5ff?s=80&d=identicon",
+    "project_id": 11809216,
+    "project": {
+        "id": 11809216,
+        "name": "messaging",
+        "description": "",
+        "web_url": "https://gitlab.com/peishu/messaging",
+        "avatar_url": null,
+        "git_ssh_url": "git@gitlab.com:peishu/messaging.git",
+        "git_http_url": "https://gitlab.com/peishu/messaging.git",
+        "namespace": "Peishu Li",
+        "visibility_level": 0,
+        "path_with_namespace": "peishu/messaging",
+        "default_branch": "master",
+        "ci_config_path": null,
+        "homepage": "https://gitlab.com/peishu/messaging",
+        "url": "git@gitlab.com:peishu/messaging.git",
+        "ssh_url": "git@gitlab.com:peishu/messaging.git",
+        "http_url": "https://gitlab.com/peishu/messaging.git"
+    },
+    "commits": [
+        {
+            "id": "4ecc6f9d37d3590930db00912af936729cd2cab0",
+            "message": "Update MQController.cs",
+            "timestamp": "2019-09-21T18:11:29Z",
+            "url": "https://gitlab.com/peishu/messaging/commit/4ecc6f9d37d3590930db00912af936729cd2cab0",
+            "author": {
+                "name": "Peishu Li",
+                "email": "peishuli62@gmail.com"
+            },
+            "added": [],
+            "modified": [
+                "Controllers/MQController.cs"
+            ],
+            "removed": []
+        }
+    ],
+    "total_commits_count": 1,
+    "push_options": {},
+    "repository": {
+        "name": "messaging",
+        "url": "git@gitlab.com:peishu/messaging.git",
+        "description": "",
+        "homepage": "https://gitlab.com/peishu/messaging",
+        "git_http_url": "https://gitlab.com/peishu/messaging.git",
+        "git_ssh_url": "git@gitlab.com:peishu/messaging.git",
+        "visibility_level": 0
+    }
+}

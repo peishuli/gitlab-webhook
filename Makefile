@@ -10,6 +10,10 @@ refresh:
 	kubectl delete -f config/deployment.yaml
 	kubectl apply -f config/deployment.yaml
 
+deploy:
+	kubectl apply -f config/deployment.yaml
+	kubectl apply -f config/service.yaml
+
 build:
 	go build main.go
 

@@ -30,3 +30,39 @@ https://stackoverflow.com/questions/52578581/trying-to-install-dependencies-usin
 ## Hint: you can generate a random secretToken with:
 head -c 8 /dev/urandom | base64
 
+## Demo setup
+
+- Deploy webhook
+```
+make deploy
+...
+deploy secret and sa (from the config repo)
+```
+- Setup ArgoCD
+- Setup Tekton (including dashboard and BuildKit daemon)
+```
+kubectl apply -f https://raw.githubusercontent.com/tektoncd/catalog/master/buildkit/0-buildkitd.yaml
+```
+- Create ns demo
+- Setup Tekton and its dashboard (notice the versions)
+```
+k apply -f https://storage.googleapis.com/tekton-releases/previous/v0.6.0/release.yaml
+k apply -f https://github.com/tektoncd/dashboard/releases/download/v0.1.1/release.yaml
+```
+Note: In ASK, if rbac is enabled, add clusterrolebinding to the default user (yaml in the config repo)
+
+- Optional: patch argoCD and tkn dashboards
+```
+kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "LoadBalancer"}}'
+kubectl patch svc tekton-dashboard -n tekton-pipelines -p '{"spec": {"type": "LoadBalancer"}}'
+```
+## URLs
+- [ArgoCD](https://104.214.109.6/)
+- [Tekton](http://104.214.104.154:9097)
+- [Webhook](http://65.52.39.93:8080/webhook)
+
+## Notes:
+ArgoCD's (resync)  interval is hardcoded as 3 minutes (defaultAppResyncPeriod = 180) in https://github.com/argoproj/argo-cd/blob/master/cmd/argocd-application-controller/main.go
+
+
+

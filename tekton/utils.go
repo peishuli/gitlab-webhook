@@ -241,7 +241,6 @@ func (c Client) createPushTask(buildInfo BuildInfo) {
 	
 	if err == nil  {
 		// named task already exists
-		fmt.Printf("An existing task %s was found\n", taskName)	
 		return
 	} 
 	
@@ -501,7 +500,7 @@ func (c Client) createGitResource(buildInfo BuildInfo) {
 	_, err := c.TektonClient.PipelineResources(buildInfo.Namespace).Get(name, metav1.GetOptions{})
 
 	if err == nil  {
-		// named resourcealready exists
+		// named resource already exists
 		return
 	} 
 
