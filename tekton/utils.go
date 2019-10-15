@@ -2,6 +2,7 @@ package tekton
 
 import (
 	"fmt"
+	"os"
 	tektonv1alpha1 "github.com/tektoncd/pipeline/pkg/client/clientset/versioned/typed/pipeline/v1alpha1"
 	k8s "k8s.io/client-go/kubernetes"
 	api "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1" 
@@ -51,6 +52,7 @@ func (c Client) CreatePipelineRun(buildInfo BuildInfo) {
 
 	if err != nil {
 		fmt.Printf("error creating pipelinerun: %v\n", err)
+		os.Exit(1)
 	}
 }
 
@@ -152,6 +154,7 @@ func (c Client) createBuildTask(buildInfo BuildInfo) {
 
 	if err != nil {
 		fmt.Printf("error creating task: %v", err)
+		os.Exit(1)
 	}
 }
 
@@ -192,7 +195,7 @@ func createBuildTaskDef(buildInfo BuildInfo) *api.Task {
 						Description: "The address of the BuildKit daemon (buildkitd) service",
 						Default: &api.ArrayOrString {
 							Type: api.ParamTypeString,
-							StringVal: "tcp://buildkitd:1234",
+							StringVal: "tcp://buildkitd.buildkit.svc.cluster.local:1234",
 						},
 					},
 					api.ParamSpec {
@@ -214,17 +217,17 @@ func createBuildTaskDef(buildInfo BuildInfo) *api.Task {
 					//Name: "something",
 					corev1.Container {
 						Name: "build-and-push",
-						Image: "${inputs.params.BUILDKIT_CLIENT_IMAGE}",
+						Image: "$(inputs.params.BUILDKIT_CLIENT_IMAGE)",
 						WorkingDir: "/workspace/source",
 						Command: []string {
-							"buildctl", "--debug", "--addr=${inputs.params.BUILDKIT_DAEMON_ADDRESS}", "build",
+							"buildctl", "--debug", "--addr=$(inputs.params.BUILDKIT_DAEMON_ADDRESS)", "build",
 							"--progress=plain",
 							"--frontend=dockerfile.v0",
-							"--opt", "filename=${inputs.params.DOCKERFILE}",
+							"--opt", "filename=$(inputs.params.DOCKERFILE)",
 							"--local", "context=.", "--local", "dockerfile=.",
-							"--output", "type=image,name=${outputs.resources.image.url}:${inputs.params.COMMITID},push=true",
+							"--output", "type=image,name=$(outputs.resources.image.url):$(inputs.params.COMMITID),push=true",
 							"--export-cache", "type=inline",
-							"--import-cache", "type=registry,ref=${outputs.resources.image.url}",
+							"--import-cache", "type=registry,ref=$(outputs.resources.image.url)",
 						},
 					},
 				},
@@ -249,17 +252,18 @@ func (c Client) createPushTask(buildInfo BuildInfo) {
 	
 	if err != nil {
 		fmt.Printf("Task creation error: %s.\n", err.Error())
+		os.Exit(1)
 	} 
 }
 
 func createPushTaskDef(buildInfo BuildInfo) *api.Task {
 	// define the commands
-	argsString := "git config --global user.email \"${inputs.params.GIT_EMAIL}@gitlab.com\"\n"
-	argsString += "git config --global user.name \"${inputs.params.GIT_USERNAME}\"\n"
-	argsString += "git remote set-url origin git@gitlab.com/${inputs.params.GIT_GROUP}/${inputs.params.GIT_REPO}.git\n"
-	argsString += "git clone https://${inputs.params.GIT_USERNAME}:${inputs.params.GIT_PASSWORD}@gitlab.com/${inputs.params.GIT_GROUP}/${inputs.params.GIT_REPO}.git\n"
-	argsString += "cd ${inputs.params.GIT_REPO}\n"
-	argsString += "cat ${inputs.params.VALUES_FILE} | yq w - image.tag ${inputs.params.COMMITID}> values2.yaml && mv values2.yaml ${inputs.params.VALUES_FILE}\n"
+	argsString := "git config --global user.email \"$(inputs.params.GIT_EMAIL)@gitlab.com\"\n"
+	argsString += "git config --global user.name \"$(inputs.params.GIT_USERNAME)\"\n"
+	argsString += "git remote set-url origin git@gitlab.com/$(inputs.params.GIT_GROUP)/$(inputs.params.GIT_REPO).git\n"
+	argsString += "git clone https://$(inputs.params.GIT_USERNAME):$(inputs.params.GIT_PASSWORD)@gitlab.com/$(inputs.params.GIT_GROUP)/$(inputs.params.GIT_REPO).git\n"
+	argsString += "cd $(inputs.params.GIT_REPO)\n"
+	argsString += "cat $(inputs.params.VALUES_FILE) | yq w - image.tag $(inputs.params.COMMITID)> values2.yaml && mv values2.yaml $(inputs.params.VALUES_FILE)\n"
 	argsString += "git add .\n"
 	argsString += "git commit -m \"Image tag updated by the webhook.\"\n"
 	argsString += "git push"	
@@ -341,6 +345,7 @@ func (c Client) createPipeline(buildInfo BuildInfo) {
 
 	if err != nil {
 		fmt.Printf("error creating pipeline: %v", err)
+		os.Exit(1)
 	}
 }
 
@@ -403,7 +408,7 @@ func (c Client) createPipelineDef(buildInfo BuildInfo) *api.Pipeline {
 							Name: "COMMITID",
 							Value: api.ArrayOrString{
 								Type: api.ParamTypeString,
-								StringVal: "${params.COMMITID}",
+								StringVal: "$(params.COMMITID)",
 							},
 						},
 					},
@@ -433,56 +438,56 @@ func (c Client) createPipelineDef(buildInfo BuildInfo) *api.Pipeline {
 							Name: "COMMITID",
 							Value: api.ArrayOrString{
 								Type: api.ParamTypeString,
-								StringVal: "${params.COMMITID}",
+								StringVal: "$(params.COMMITID)",
 							},
 						},
 						api.Param {
 							Name: "COMMITID",
 							Value: api.ArrayOrString{
 								Type: api.ParamTypeString,
-								StringVal: "${params.COMMITID}",
+								StringVal: "$(params.COMMITID)",
 							},
 						},
 						api.Param {
 							Name: "VALUES_FILE",
 							Value: api.ArrayOrString{
 								Type: api.ParamTypeString,
-								StringVal: "${params.VALUES_FILE}",
+								StringVal: "$(params.VALUES_FILE)",
 							},
 						},
 						api.Param {
 							Name: "GIT_EMAIL",
 							Value: api.ArrayOrString{
 								Type: api.ParamTypeString,
-								StringVal: "${params.GIT_EMAIL}",
+								StringVal: "$(params.GIT_EMAIL)",
 							},
 						},
 						api.Param {
 							Name: "GIT_USERNAME",
 							Value: api.ArrayOrString{
 								Type: api.ParamTypeString,
-								StringVal: "${params.GIT_USERNAME}",
+								StringVal: "$(params.GIT_USERNAME)",
 							},
 						},
 						api.Param {
 							Name: "GIT_PASSWORD",
 							Value: api.ArrayOrString{
 								Type: api.ParamTypeString,
-								StringVal: "${params.GIT_PASSWORD}",
+								StringVal: "$(params.GIT_PASSWORD)",
 							},
 						},
 						api.Param {
 							Name: "GIT_GROUP",
 							Value: api.ArrayOrString{
 								Type: api.ParamTypeString,
-								StringVal: "${params.GIT_GROUP}",
+								StringVal: "$(params.GIT_GROUP)",
 							},
 						},
 						api.Param {
 							Name: "GIT_REPO",
 							Value: api.ArrayOrString{
 								Type: api.ParamTypeString,
-								StringVal: "${params.GIT_REPO}",
+								StringVal: "$(params.GIT_REPO)",
 							},
 						},
 					},					
@@ -513,6 +518,7 @@ func (c Client) createGitResource(buildInfo BuildInfo) {
 
 	if err != nil {
 		fmt.Printf("error creating taskrun: %v", err)
+		os.Exit(1)
 	}
 	
 }
@@ -535,6 +541,7 @@ func (c Client) createImageResource(buildInfo BuildInfo){
 
 	if err != nil {
 		fmt.Printf("error creating taskrun: %v", err)
+		os.Exit(1)
 	}
 }
 

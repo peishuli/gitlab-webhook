@@ -32,6 +32,7 @@ func main() {
 	gitlabPassword := os.Getenv("gitlabPassword")
 	gitlabSecretToken := os.Getenv("gitlabSecretToken")
 	gitlabGroup := os.Getenv("gitlabGroup")
+	env := os.Getenv("env")
 
 	var config *rest.Config
 	var err error
@@ -44,15 +45,18 @@ func main() {
 
 	if err != nil {
 		fmt.Printf("Error building kubeconfig from %s: %s\n", kubeconfig, err.Error())
+		os.Exit(1)
 	}
 	k8sClient, err := k8s.NewForConfig(config)
 	if err != nil {
 		fmt.Printf("Could not create k8sClient: %s\n", err.Error())
+		os.Exit(1)
 	}
 	
 	tektonClient, err := tektonv1alpha1.NewForConfig(config)
 	if err != nil {
 		fmt.Printf("Could not create tektonClient: %s\n", err.Error())
+		os.Exit(1)
 	}
 
 
@@ -64,12 +68,19 @@ func main() {
 	
 	hook, _ := gitlab.New(gitlab.Options.Secret(gitlabSecretToken))
 
-	http.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
+	hookPath := path
+
+	if env != "" {
+		hookPath = fmt.Sprintf("%s-%s", path, env)
+	}
+
+	http.HandleFunc(hookPath, func(w http.ResponseWriter, r *http.Request) {
 
 		payload, err := hook.Parse(r, gitlab.PushEvents, gitlab.MergeRequestEvents)
 		if err != nil {
 			if err == gitlab.ErrEventNotFound {
-				fmt.Println("Got an error here...")
+				fmt.Printf("Event not found: %s\n", err.Error())
+				os.Exit(1)
 			}
 		}
 
@@ -93,7 +104,7 @@ func main() {
 
 			}
 
-			client.CreatePipelineRun(buildInfo)
+			client.CreatePipelineRun(buildInfo)			
 			
 		case gitlab.MergeRequestEventPayload:
 			fmt.Println("Merge request event detected...")

@@ -64,5 +64,15 @@ kubectl patch svc tekton-dashboard -n tekton-pipelines -p '{"spec": {"type": "Lo
 ## Notes:
 ArgoCD's (resync)  interval is hardcoded as 3 minutes (defaultAppResyncPeriod = 180) in https://github.com/argoproj/argo-cd/blob/master/cmd/argocd-application-controller/main.go. This behavior can be overwritten via argocd webhook (i.e., push vs pull)
 
+## Install Tekton CD Pipelines on OpenShift
+```
+oc new-project tekton-pipelines
+oc adm policy add-scc-to-user anyuid -z tekton-pipelines-controller
+oc apply --filename https://storage.googleapis.com/tekton-releases/latest/release.yaml
+```
 
+## Install Teckon Dashboard on OpenShift
+```
+oc apply --filename https://github.com/tektoncd/dashboard/releases/download/v0.2.0/openshift-tekton-dashboard.yaml --validate=false
+```
 
