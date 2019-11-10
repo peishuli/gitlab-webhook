@@ -94,42 +94,42 @@ func createPipelineRunDef(buildInfo BuildInfo) *api.PipelineRun {
 					Name: "VALUES_FILE",
 					Value: api.ArrayOrString {
 						Type: api.ParamTypeString,
-						StringVal: buildInfo.ValuesFile, //"values.yaml"
+						StringVal: buildInfo.ValuesFile, 
 					},
 				},
 				api.Param {
 					Name: "GIT_EMAIL",
 					Value: api.ArrayOrString {
 						Type: api.ParamTypeString,
-						StringVal: buildInfo.GitlabEmail, //"peishuli62@gitlab.com"
+						StringVal: buildInfo.GitlabEmail, 
 					},
 				},
 				api.Param {
 					Name: "GIT_USERNAME",
 					Value: api.ArrayOrString {
 						Type: api.ParamTypeString,
-						StringVal: buildInfo.GitlabUsername, //"peishu"
+						StringVal: buildInfo.GitlabUsername, 
 					},
 				},
 				api.Param {
 					Name: "GIT_PASSWORD",
 					Value: api.ArrayOrString {
 						Type: api.ParamTypeString,
-						StringVal: buildInfo.GitlabPassword, //"Pass%40word1"
+						StringVal: buildInfo.GitlabPassword, 
 					},
 				},
 				api.Param {
 					Name: "GIT_GROUP",
 					Value: api.ArrayOrString {
 						Type: api.ParamTypeString,
-						StringVal: buildInfo.GitlabGroup, //"peishu"
+						StringVal: buildInfo.GitlabGroup, 
 					},
 				},
 				api.Param {
 					Name: "GIT_REPO",
 					Value: api.ArrayOrString {
 						Type: api.ParamTypeString,
-						StringVal: buildInfo.GitlabConfigRepository, //"identity-config" 
+						StringVal: buildInfo.GitlabConfigRepository, 
 					},
 				},
 			},
